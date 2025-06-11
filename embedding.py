@@ -76,6 +76,12 @@ if not final_merged_documents:
 end_time = time.time()
 print(f"Pipeline completed in {end_time - start_time} seconds.")
 
+print(final_merged_documents[0:2])
+# for i, doc in enumerate(final_merged_documents):
+#     if doc.metadata is None:
+#         doc.metadata = {}
+#     doc.metadata['final_chunk_index'] = i
+
 # similarities = model_embbed.similarity(embeddings, embeddings)
 # print(embeddings.shape)
 # dictionary

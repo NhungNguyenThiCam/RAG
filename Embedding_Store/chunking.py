@@ -153,5 +153,20 @@ def merge_chunks_by_semantic_similarity(
         current_merged_metadata['merged_content_sources'] = sorted(list(set(current_merged_metadata['merged_content_sources'])))
         merged_documents.append(Document(page_content=merged_page_content, metadata=current_merged_metadata))
     
+    # Lưu trữ vector của các chunk
+    num_chunks = len(merged_documents)
+    for i in tqdm(range(0, num_chunks, embedding_batch_size), desc="Embedding Documents in Batches"):
+        batch_docs = merged_documents[i:i + embedding_batch_size]
+        batch_contents = [doc.page_content for doc in batch_docs]
+        batch_embeddings = langchain_embedding_model.embed_documents(batch_contents)
+        
+        # Gán embedding trở lại vào metadata của từng document trong lô
+        for doc, embedding in zip(batch_docs, batch_embeddings):
+            doc.metadata['embedding'] = embedding.tolist() if hasattr(embedding, 'tolist') else embedding
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        
     print(f"Semantic merging resulted in {len(merged_documents)} final chunks.")
     return merged_documents

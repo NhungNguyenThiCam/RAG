@@ -107,7 +107,7 @@ def store_documents_in_mongodb_atlas(
 def query_similar_vectors_from_mongodb(
     query: str,
     vector_store: MongoDBAtlasVectorSearch,
-    top_k: int = 4
+    top_k: int = 5
 ):
     """
     Truy vấn các vector/document tương tự nhất với câu hỏi từ vector db.
@@ -119,7 +119,7 @@ def query_similar_vectors_from_mongodb(
         List[Document]: Danh sách các document tương tự nhất.
     """
     try:
-        results = vector_store.similarity_search(query=query, k=top_k)
+        results = vector_store.similarity_search_with_score(query=query, k=top_k)
         return results
     except Exception as e:
         print(f"Lỗi khi truy vấn vector db: {e}")

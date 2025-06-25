@@ -6,6 +6,8 @@ services:
     image: tructran172003/whisper-api:v1.0
     ports:
       - "8000:8000"
+    networks:
+      - my-network
     deploy:
       resources:
         reservations:
@@ -13,3 +15,57 @@ services:
             - driver: nvidia
               capabilities: [gpu] 
               count: all # This corresponds to --gpus all
+
+  tts-api:
+    build:
+      context: ../RAG_Project/Container_Folder/Text_to_Speech
+      dockerfile: dockerfile
+    image: tructran172003/tts-api:v1.0
+    ports:
+      - "8001:8001"
+    networks:
+      - my-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu] 
+              count: all # This corresponds to --gpus all
+
+networks:
+  my-network:
+    driver: bridge
+
+  # chatbot_api:
+  #   build:
+  #     context: ../RAG_Project/Container_Folder/Chatbot_API
+  #     dockerfile: dockerfile
+  #   image: tructran172003/chatbot-api:v1.0
+  #   ports:
+  #     - "5000:5000"
+  #   depends_on:
+  #     - whisper-api
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             capabilities: [gpu] 
+  #             count: all # This corresponds to --gpus all
+
+#   vector_database:
+#     image: pgvector/pgvector:pg16
+#     container_name: my_pgvector_db_compose
+#     environment:
+#       POSTGRES_DB: mydb
+#       POSTGRES_USER: myuser
+#       POSTGRES_PASSWORD: your_secret_password 
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - pgvector_data:/var/lib/postgresql/data
+#     restart: always
+
+# volumes:
+#   pgvector_data:

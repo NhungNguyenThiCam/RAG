@@ -46,12 +46,15 @@ async def rag_api(question: str = Form(None), audio: UploadFile = File(None)):
         output_database = []  # This should be your context chunks
         similarities = []  # This should be the similarities for each context chunk
         reranked_indices = rerank_contexts_with_keywords(output_database, similarities, keywords, entities, question, k=3)
+        
+        return {"type": "text", "content": output}
 
     if audio:
+        # xử lý tệp âm thanh
         response = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
         data = response.json()
         output = data["output_text"]
-        # xử lý tệp âm thanh
+        
         return {"type": "text", "content": output}
     
 

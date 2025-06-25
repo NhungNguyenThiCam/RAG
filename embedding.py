@@ -1,16 +1,10 @@
 from dotenv import load_dotenv
-from pymongo.collection import Collection
-from pymongo import MongoClient
-from langchain_mongodb import MongoDBAtlasVectorSearch
 from Embedding_Store.Model import *
 from Embedding_Store.chunking import *
 from Embedding_Store.utils import *
 from Embedding_Store.db import *
-# LLM
-from langchain_ollama import ChatOllama
 import torch
 print(torch.cuda.is_available())
-# --- LangChain and related imports ---
 # --- MongoDB import ---
 
 # load env
@@ -24,9 +18,7 @@ if os.path.exists(dotenv_path):
 else:
     print(f"warning: file .env at {dotenv_path} not found")
 
-chunk_size = int(os.getenv("JAVA_SPLITTER_CHUNK_SIZE", "1000")
-                 )  # Default to 1000 if not set
-# Default to 200 if not set
+chunk_size = int(os.getenv("JAVA_SPLITTER_CHUNK_SIZE", "2000"))  
 chunk_overlap = int(os.getenv("JAVA_SPLITTER_CHUNK_OVERLAP", "200"))
 
 

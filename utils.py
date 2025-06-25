@@ -1,22 +1,29 @@
-from underthesea import pos_tag
 from model import kw_model
-
+import requests,os
+from prompt import prompt_entities,prompt_keyword
+ 
 # --- Extract keywords with POS filtering ---
 def extract_keywords_from_question(question, top_n=5):
+    url = os.getenv("API_GEMINI_ENTITIES")
+    prompt = prompt_keyword.format(top_n=top_n)
+    d = {"contents": [{"parts": [{"text": f"{prompt}: {question}"}]}]}
     try:
-        tags = pos_tag(question)
-        filtered = " ".join(word for word, tag in tags if tag in ['N', 'Np', 'Nc', 'V'])
-        keywords = kw_model.extract_keywords(filtered, keyphrase_ngram_range=(1, 3), stop_words=None, top_n=top_n)
-        return [kw for kw, _ in keywords]
-    except Exception:
+        r = requests.post(url, headers={"Content-Type": "application/json"}, json=d).json()
+        t = r['candidates'][0]['content']['parts'][0]['text']
+        return [i.strip().lower() for i in t.replace('[','').replace(']','').replace('"','').split(',') if i.strip()]
+    except:
         return []
+
 
 # --- Extract named entities (names, objects) ---
 def extract_entities(question):
+    url=os.getenv("API_GEMINI_ENTITIES")
+    d = {"contents": [{"parts": [{"text": f"{prompt_entities}: {question}"}]}]}
     try:
-        tagged = pos_tag(question)
-        return [word.lower() for word, tag in tagged if tag in ["Np", "N", "Nc"]]
-    except:
+        r = requests.post(url, headers={"Content-Type": "application/json"}, json=d).json()
+        t = r['candidates'][0]['content']['parts'][0]['text']
+        return [i.strip().lower() for i in t.replace('[','').replace(']','').replace('"','').split(',') if i.strip()]
+    except: 
         return []
 
 # --- Rerank contexts ---
@@ -44,5 +51,3 @@ def rerank_contexts_with_keywords(output_database, similarities, keywords, entit
 
     scores.sort(reverse=True)
     return [i for _, i in scores[:k]]
-
-

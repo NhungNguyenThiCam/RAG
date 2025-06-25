@@ -18,3 +18,6 @@ CÂU HỎI:
 
 📤 CÂU TRẢ LỜI:
 """
+
+prompt_entities="trả về tên người hoặc đối tượng chính, viết thường, không giải thích"
+prompt_keyword="trích xuất {top_n} từ khóa chính nhất từ câu sau, viết thường, phân cách bằng dấu phẩy, không giải thích"

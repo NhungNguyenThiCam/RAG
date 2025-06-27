@@ -1,23 +1,37 @@
-from underthesea import pos_tag
 from model import kw_model
-
+import requests,os
+from prompt import prompt_entities,prompt_keyword
+ 
 # --- Extract keywords with POS filtering ---
 def extract_keywords_from_question(question, top_n=5):
+    url = os.getenv("API_GEMINI_ENTITIES")
+    prompt = prompt_keyword.format(top_n=top_n, text=question)
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
-        tags = pos_tag(question)
-        filtered = " ".join(word for word, tag in tags if tag in ['N', 'Np', 'Nc', 'V'])
-        keywords = kw_model.extract_keywords(filtered, keyphrase_ngram_range=(1, 3), stop_words=None, top_n=top_n)
-        return [kw for kw, _ in keywords]
-    except Exception:
+        response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload).json()
+        text = response['candidates'][0]['content']['parts'][0]['text']
+        return [i.strip().lower() for i in text.replace('[','').replace(']','').replace('"','').split(',') if i.strip()]
+    except Exception as e:
+        print(f"[Keyword Extraction Error] {e}")
         return []
 
 # --- Extract named entities (names, objects) ---
 def extract_entities(question):
+    url = os.getenv("API_GEMINI_ENTITIES")
+    prompt = prompt_entities.format(text=question)
     try:
-        tagged = pos_tag(question)
-        return [word.lower() for word, tag in tagged if tag in ["Np", "N", "Nc"]]
-    except:
+        response = requests.post(url, headers={"Content-Type": "application/json"}, json={
+            "contents": [{"parts": [{"text": prompt}]}]
+        }).json()
+        text = response['candidates'][0]['content']['parts'][0]['text']
+        # Làm sạch như trong extract_keywords_from_question
+        return [i.strip().lower() for i in text.replace('[','').replace(']','').replace('"','').replace("'", '').split(',') if i.strip()]
+    except Exception as e:
+        print(f"[Entity extraction error] {e}")
         return []
+
+
+
 
 # --- Rerank contexts ---
 def rerank_contexts_with_keywords(output_database, similarities, keywords, entities, question, weight=0.8, k=3):
@@ -45,20 +59,4 @@ def rerank_contexts_with_keywords(output_database, similarities, keywords, entit
     scores.sort(reverse=True)
     return [i for _, i in scores[:k]]
 
-
-# if __name__ == "__main__":
-#     # Example usage
-#     question = "Hãy cho tôi biết về Nguyễn Văn A và sở thích của anh ấy."
-#     keywords = extract_keywords_from_question(question)
-#     entities = extract_entities(question)
-    
-#     print("Keywords:", keywords)
-#     print("Entities:", entities)
-
-#     # Assuming output_database and similarities are defined
-#     output_database = ["Nguyễn Văn A thích đọc sách.", "Trần Thị B là một nhà văn nổi tiếng."]
-#     similarities = [0.8, 0.5]
-    
-#     reranked_indices = rerank_contexts_with_keywords(output_database, similarities, keywords, entities, question)
-#     print("Reranked indices:", reranked_indices)
 

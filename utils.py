@@ -46,3 +46,19 @@ def rerank_contexts_with_keywords(output_database, similarities, keywords, entit
     return [i for _, i in scores[:k]]
 
 
+# if __name__ == "__main__":
+#     # Example usage
+#     question = "Hãy cho tôi biết về Nguyễn Văn A và sở thích của anh ấy."
+#     keywords = extract_keywords_from_question(question)
+#     entities = extract_entities(question)
+    
+#     print("Keywords:", keywords)
+#     print("Entities:", entities)
+
+#     # Assuming output_database and similarities are defined
+#     output_database = ["Nguyễn Văn A thích đọc sách.", "Trần Thị B là một nhà văn nổi tiếng."]
+#     similarities = [0.8, 0.5]
+    
+#     reranked_indices = rerank_contexts_with_keywords(output_database, similarities, keywords, entities, question)
+#     print("Reranked indices:", reranked_indices)
+

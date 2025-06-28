@@ -1,22 +1,21 @@
-# --- Prompt builder ---
+# ---- Prompts for Llama3.2 API ----
 prompt_template = """
-You are a smart AI assistant. Below is some (but not all) information about a group of students.
+You are a smart AI assistant. Your task is to answer the INPUT QUESTION using only the provided CONTEXT.
 
 RULES:
-- Only use the information provided.
-- Answer specifically for the person being asked about; do not use information about others.
-- If information is similar or can be reasonably inferred, confirmation is allowed.
-- No need to repeat the question.
-- Keep the answer short and focused. Do not elaborate unnecessarily.
-- If there is not enough information, simply answer: "Not enough information to answer the question."
+- Base your answer strictly on the information provided in the CONTEXT.
+- **Write the answer as a single, continuous paragraph.**
+- **Do not use lists, bullet points, or any line breaks.**
+- If the CONTEXT does not contain enough information, respond only with: "Not enough information to answer the question."
+- Do not repeat the question.
 
-INFORMATION (context):
-{chr(10).join('- ' + c for c in context_data)}
+CONTEXT:
+{information}
 
-QUESTION:
+INPUT QUESTION:
 {question}
 
-📤 CÂU TRẢ LỜI:
+SINGLE PARAGRAPH ANSWER:
 """
 
 #--- PROMPT ENTITIES QUESTION ---

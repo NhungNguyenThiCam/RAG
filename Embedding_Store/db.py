@@ -28,7 +28,6 @@ def get_pgvector_store(collection_name: str) -> PGVector:
 
     # Tạo connection string cho PostgreSQL
     connection_string = f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    print("Connection string:", connection_string)
     print(f"Connecting to PGvector with database '{db_name}'...")
 
     try:
@@ -53,7 +52,6 @@ def store_documents_in_pgvector(
 ):
     """
     Lưu trữ các document vào PGvector.
-    Hàm này thay thế cho store_documents_in_mongodb_atlas.
     """
     if not documents_to_store:
         print("Không có document nào để lưu trữ.")
@@ -81,7 +79,7 @@ def query_similar_vectors_from_pgvector(
     try:
         # Sử dụng similarity_search_with_score để tìm kiếm
         results_with_scores = vector_store.similarity_search_with_score(query=query, k=top_k)
-        print(f"✅ Tìm thấy {len(results_with_scores)} kết quả.")
+        # print(f"✅ Tìm thấy {len(results_with_scores)} kết quả.")
         return results_with_scores
     except Exception as e:
         print(f"❌ Error querying vector: {e}")

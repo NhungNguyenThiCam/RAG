@@ -1,12 +1,9 @@
-import socket
+from sqlalchemy import create_engine
 
-def find_free_ports(start=8001, end=8100):
-    free_ports = []
-    for port in range(start, end):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('localhost', port)) != 0:
-                free_ports.append(port)
-    return free_ports
-
-ports = find_free_ports()
-print("Các cổng rảnh có thể dùng:", ports[:10])  # In ra 10 cổng đầu tiên
+connection_string = "postgresql+psycopg://Rag_user:Agents%40123@127.0.0.1:5432/ragdatabase"
+engine = create_engine(connection_string)
+try:
+    with engine.connect() as conn:
+        print("✅ SQLAlchemy connected successfully!")
+except Exception as e:
+    print("❌ SQLAlchemy connection failed:", e)

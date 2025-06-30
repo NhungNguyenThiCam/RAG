@@ -1,6 +1,6 @@
 from prompt import prompt_template  
 import requests
-from Embedding_Store.Model import *
+# from Embedding_Store.Model import *
 import os
 import json
 from dotenv import load_dotenv
@@ -16,7 +16,7 @@ else:
     print(f"warning: file .env at {dotenv_path} not found")
     
 
-embedding_model = initialize_embedding_model(os.getenv("MODEL_NAME_EMBED"))
+# embedding_model = initialize_embedding_model(os.getenv("MODEL_NAME_EMBED"))
 
 # --- Gọi mô hình llama3.2 qua Ollama ---
 # def call_ollama_llama32(question, context_chunks):
@@ -44,7 +44,7 @@ embedding_model = initialize_embedding_model(os.getenv("MODEL_NAME_EMBED"))
 
 
 
-def get_entities_as_string(prompt_template: str, information: str, question: str) -> str:
+def get_entities_as_string_GEMINI(prompt_template: str, information: str, question: str) -> str:
     """
     Args:
         prompt_template (str): Mẫu prompt có các vị trí để format.
@@ -65,9 +65,9 @@ def get_entities_as_string(prompt_template: str, information: str, question: str
         processed_information = processed_information.replace('\n', ' ').replace('\t', ' ')
         # Loại bỏ các khoảng trắng thừa.
         processed_information = " ".join(processed_information.split())
-        output_path = "query_results.txt"
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(f"Nội dung: {processed_information}\n")
+        # output_path = "query_results.txt"
+        # with open(output_path, "w", encoding="utf-8") as f:
+        #     f.write(f"Nội dung: {processed_information}\n")
         # Định dạng prompt và tạo payload
         prompt = prompt_template.format(
             subject="about programming java", 

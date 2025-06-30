@@ -1,14 +1,13 @@
 import os
 import requests
-from prompt import prompt_template
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form
-from Embedding_Store.Model import *
 from typing import Union
 from fastapi.responses import JSONResponse
 from Embedding_Store.db import query_similar_vectors_from_pgvector, get_pgvector_store
-from model import embedding_model, get_entities_as_string
+from model import get_entities_as_string_GEMINI
 from utils import get_top_k_contexts
+from prompt import prompt_template
 
 # load env
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -44,22 +43,37 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
         reranked_indices = get_top_k_contexts(documents, question, similarities, k=3)
         # print(f"Saved reranked indices to {reranked_indices}")
 
-        output_text = get_entities_as_string(prompt_template, reranked_indices, question)
+        output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=question)
 
         return {"type": "text", "content": output_text}
-
-    if audio:
+    else:
         # convert speech to text
         response_stt = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
         data = response_stt.json()
         output_stt = data["output_text"]
+        # --- Query PGVector ---
+        output_database = query_similar_vectors_from_pgvector(output_stt, vector_store, top_k=5)
         
-        
-        # convert text to speech
-        response_tts = requests.post("http://0.0.0.0:8001/transcribe_audio/", data={"text_input": output_stt})
-        # return base64 audio
+        # rerank contexts
+        similarities = []
+        documents = []
+        for document, score in output_database:
+            documents.append(document.page_content)
+            similarities.append(score)
+        reranked_indices = get_top_k_contexts(documents, output_stt, similarities, k=3)
 
-        return {"type": "text", "content": output_stt}
+        output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=output_stt)
+        # convert text to speech
+        answer_audio_base64 = requests.post("http://0.0.0.0:8001/transcribe/", data={"text_input": output_text})
+        answer_audio_base64.raise_for_status() # Kiểm tra lỗi HTTP 
+
+        # 2. Trích xuất dữ liệu JSON từ response
+        tts_data = answer_audio_base64.json()
+
+        # 3. Sử dụng đúng key là "output_sound" để lấy chuỗi base64
+        final_audio_base64 = tts_data.get("output_sound")
+
+        return {"type": "audio","audio_base64": final_audio_base64}
     
 
 # uvicorn API_LLAMA3_2:app --host 0.0.0.0 --port 4096 --reload

@@ -7,8 +7,8 @@ from Embedding_Store.Model import *
 from typing import Union
 from fastapi.responses import JSONResponse
 from Embedding_Store.db import query_similar_vectors_from_pgvector, get_pgvector_store
-from model import embedding_model, call_ollama_llama32
-from utils import extract_keywords_from_question, extract_entities, get_top_k_contexts
+from model import embedding_model, get_entities_as_string
+from utils import get_top_k_contexts
 
 # load env
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -32,9 +32,6 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
         return JSONResponse(status_code=400, content={"error": "No question or audio provided"})
 
     if question:
-        # 1. Kết nối và lấy đối tượng vector store
-        vector_store = get_pgvector_store(collection_name=collection_name)
-        
         # --- Query PGVector ---
         output_database = query_similar_vectors_from_pgvector(question, vector_store, top_k=5)
         
@@ -45,8 +42,9 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
             documents.append(document.page_content)
             similarities.append(score)
         reranked_indices = get_top_k_contexts(documents, question, similarities, k=3)
-        
-        output_text = call_ollama_llama32(question, context_chunks=reranked_indices)
+        # print(f"Saved reranked indices to {reranked_indices}")
+
+        output_text = get_entities_as_string(prompt_template, reranked_indices, question)
 
         return {"type": "text", "content": output_text}
 

@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import os
 import requests
 from dotenv import load_dotenv
@@ -47,41 +48,74 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
 
         return {"type": "text", "content": output_text}
     else:
-        # convert speech to text
-        response_stt = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
-        data = response_stt.json()
-        output_stt = data["output_text"]
-        # --- Query PGVector ---
-        output_database = query_similar_vectors_from_pgvector(output_stt, vector_store, top_k=5)
-        
-        # rerank contexts
-        similarities = []
-        documents = []
-        for document, score in output_database:
-            documents.append(document.page_content)
-            similarities.append(score)
-        reranked_indices = get_top_k_contexts(documents, output_stt, similarities, k=3)
+        try:
+            # --- Ghi log các bước xử lý ---
+            logger.info("Received audio input. Calling STT service.")
+            response_stt = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
+            response_stt.raise_for_status() # Kiểm tra lỗi HTTP từ STT service
+            
+            data = response_stt.json()
+            output_stt = data["output_text"]
+            logger.info(f"STT service returned text")
 
-        output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=output_stt)
-        # convert text to speech
-        answer_audio_base64 = requests.post("http://0.0.0.0:8001/transcribe/", data={"text_input": output_text})
-        answer_audio_base64.raise_for_status() # Kiểm tra lỗi HTTP 
+            # --- Query PGVector ---
+            output_database = query_similar_vectors_from_pgvector(output_stt, vector_store, top_k=5)
+            
+            # rerank contexts
+            similarities = []
+            documents = []
+            for document, score in output_database:
+                documents.append(document.page_content)
+                similarities.append(score)
+            reranked_indices = get_top_k_contexts(documents, output_stt, similarities, k=3)
+            output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=output_stt)
 
-        # 2. Trích xuất dữ liệu JSON từ response
-        tts_data = answer_audio_base64.json()
+            # --- Gọi TTS service ---
+            logger.info("Calling TTS service to synthesize audio.")
+            answer_audio_base64 = requests.post("http://0.0.0.0:8001/transcribe/", data={"text_input": output_text})
+            answer_audio_base64.raise_for_status()
 
-        # 3. Sử dụng đúng key là "output_sound" để lấy chuỗi base64
-        final_audio_base64 = tts_data.get("output_sound")
+            tts_data = answer_audio_base64.json()
+            final_audio_base64 = tts_data.get("output_sound")
+            logger.info("Successfully generated final audio response.")
+            return {"type": "audio", "audio_base64": final_audio_base64}
 
-        return {"type": "audio","audio_base64": final_audio_base64}
+        except requests.exceptions.RequestException as e:
+            # Ghi lại lỗi khi gọi đến các service khác
+            logger.error(f"HTTP request to another service failed: {e}")
+            # Trả về một lỗi có ý nghĩa cho client
+            return {"error": "Failed to communicate with an internal service."}, 500
+        except Exception as e:
+            # Bắt các lỗi không lường trước khác
+            logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+            return {"error": "An internal server error occurred."}, 500
     
 
 # uvicorn API_LLAMA3_2:app --host 0.0.0.0 --port 4096 --reload
 
-# if __name__ == "__main__":
-#     uvicorn.run(
-#         "main:app",
-#         host="0.0.0.0",
-#         port=8000,
-#         reload=True
-#     )
+
+# # convert speech to text
+# response_stt = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
+# data = response_stt.json()
+# output_stt = data["output_text"]
+# # --- Query PGVector ---
+# output_database = query_similar_vectors_from_pgvector(output_stt, vector_store, top_k=5)
+
+# # rerank contexts
+# similarities = []
+# documents = []
+# for document, score in output_database:
+#     documents.append(document.page_content)
+#     similarities.append(score)
+# reranked_indices = get_top_k_contexts(documents, output_stt, similarities, k=3)
+
+# output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=output_stt)
+# # convert text to speech
+# answer_audio_base64 = requests.post("http://0.0.0.0:8001/transcribe/", data={"text_input": output_text})
+# answer_audio_base64.raise_for_status() # HTTP error
+
+# # Extract JSON from response
+# tts_data = answer_audio_base64.json()
+# final_audio_base64 = tts_data.get("output_sound")
+
+# return {"type": "audio","audio_base64": final_audio_base64}

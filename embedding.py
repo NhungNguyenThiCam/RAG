@@ -77,26 +77,26 @@ except Exception as e:
 
 
 # 3. Truy vấn dữ liệu
-user_query = "What is Java and why should I use it?"
-similar_docs = query_similar_vectors_from_pgvector(user_query, vector_store, top_k=2)
+# user_query = "What is Java and why should I use it?"
+# similar_docs = query_similar_vectors_from_pgvector(user_query, vector_store, top_k=2)
 
-# 4. In kết quả
-print("\n--- KẾT QUẢ TRUY VẤN ---")
-output_path = "query_results.txt"
-with open(output_path, "w", encoding="utf-8") as f:
-    if similar_docs:
-        for doc, score in similar_docs:
-            print(f"Nội dung: {doc.page_content}")
-            print(f"Điểm tương đồng (score): {score:.4f}")
-            print("-" * 20)
-            # Write to file
-            f.write(f"Nội dung: {doc.page_content}\n")
-            f.write(f"Điểm tương đồng (score): {score:.4f}\n")
-            f.write("-" * 20 + "\n")
-    else:
-        print("Không tìm thấy document nào phù hợp.")
-        f.write("Không tìm thấy document nào phù hợp.\n")
-print(f"\nKết quả đã được lưu vào {output_path}")
+# # 4. In kết quả
+# print("\n--- KẾT QUẢ TRUY VẤN ---")
+# output_path = "query_results.txt"
+# with open(output_path, "w", encoding="utf-8") as f:
+#     if similar_docs:
+#         for doc, score in similar_docs:
+#             print(f"Nội dung: {doc.page_content}")
+#             print(f"Điểm tương đồng (score): {score:.4f}")
+#             print("-" * 20)
+#             # Write to file
+#             f.write(f"Nội dung: {doc.page_content}\n")
+#             f.write(f"Điểm tương đồng (score): {score:.4f}\n")
+#             f.write("-" * 20 + "\n")
+#     else:
+#         print("Không tìm thấy document nào phù hợp.")
+#         f.write("Không tìm thấy document nào phù hợp.\n")
+# print(f"\nKết quả đã được lưu vào {output_path}")
 
 
 

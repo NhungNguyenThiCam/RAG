@@ -3,7 +3,7 @@ import soundfile as sf
 import numpy as np
 import base64
 import io
-from models import LFinference
+from .models import LFinference
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse
 

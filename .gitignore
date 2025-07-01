@@ -4,4 +4,5 @@ Container_Folder/Text_to_Speech/StyleTTS2/Utils/ASR/epoch_00080.pth
 __pycache__/
 *.pyc
 Container_Folder/Faster_Whisper/models--Systran--faster-whisper-medium
-# config/.env
+jenkins_data
+config/.env

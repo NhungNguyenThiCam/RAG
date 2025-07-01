@@ -1,0 +1,110 @@
+pipeline {
+    agent any
+    options {
+        // Giữ lại tối đa 5 bản build log trong 5 ngày
+        buildDiscarder(logRotator(numToKeepStr: '5', daysToKeepStr: '5'))
+        // Bật timestamp cho mỗi dòng log
+        timestamps()
+    }
+
+    environment {
+        tts_api_registry     = 'tructran172003/tts-api'
+        whisper_api_registry = 'tructran172003/whisper-api'
+        chatbot_api_registry = 'tructran172003/chatbot-api'
+        registryCredential   = 'dockerhub'
+    }
+
+    stages {
+        stage('Test') {
+            agent {
+                docker {
+                    image 'python:3.10'
+                }
+            }
+            steps {
+                echo 'Testing model correctness..'
+                // Giả định requirements.txt ở thư mục gốc và test cho cả 3 service
+                // Bạn có thể cần điều chỉnh đường dẫn tới requirements.txt nếu cần
+                sh 'pip install -r ./Container_Folder/Faster_Whisper/requirements.txt && pytest ./Container_Folder/Faster_Whisper/tests'
+                sh 'pip install -r ./Container_Folder/Text_to_Speech/requirements.txt && pytest ./Container_Folder/Text_to_Speech/tests'
+                sh 'pip install -r ./Container_Folder/chatbot_api/requirements.txt && pytest ./Container_Folder/chatbot_api/tests'
+            }
+        }
+
+        // Build và Push tất cả các image song song để tiết kiệm thời gian
+        stage('Build & Push All Services') {
+            parallel {
+                stage('Build & Push TTS') {
+                    steps {
+                        // Chuyển vào thư mục context của service
+                        dir('./Container_Folder/Text_to_Speech') {
+                            script {
+                                echo "Building TTS image.."
+                                // Build image với tên và tag là 'latest'
+                                def dockerImage = docker.build(env.tts_api_registry, "-f Dockerfile .")
+                                
+                                echo "Pushing TTS image to Docker Hub.."
+                                // Đăng nhập và push image với 2 tag: số build và 'latest'
+                                docker.withRegistry('', env.registryCredential) {
+                                    dockerImage.push("${env.BUILD_NUMBER}")
+                                    dockerImage.push("latest")
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build & Push Whisper') {
+                    steps {
+                        dir('./Container_Folder/Faster_Whisper') {
+                            script {
+                                echo "Building Whisper image.."
+                                def dockerImage = docker.build(env.whisper_api_registry, "-f Dockerfile .")
+
+                                echo "Pushing Whisper image to Docker Hub.."
+                                docker.withRegistry('', env.registryCredential) {
+                                    dockerImage.push("${env.BUILD_NUMBER}")
+                                    dockerImage.push("latest")
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build & Push Chatbot') {
+                    steps {
+                        dir('./Container_Folder/chatbot_api') {
+                            script {
+                                echo "Building Chatbot image.."
+                                def dockerImage = docker.build(env.chatbot_api_registry, "-f Dockerfile .")
+
+                                echo "Pushing Chatbot image to Docker Hub.."
+                                docker.withRegistry('', env.registryCredential) {
+                                    dockerImage.push("${env.BUILD_NUMBER}")
+                                    dockerImage.push("latest")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying models with Docker Compose...'
+                // Sử dụng docker-compose để pull image mới và khởi chạy lại dịch vụ
+                // Lệnh này sẽ chỉ khởi động lại các service có image đã thay đổi
+                // sh 'docker-compose pull'
+                // sh 'docker-compose up -d --remove-orphans'
+            }
+        }
+    }
+    
+    post {
+        // Luôn luôn chạy sau khi pipeline kết thúc, dù thành công hay thất bại
+        always {
+            echo 'Pipeline finished. Cleaning up workspace...'
+            // Dọn dẹp workspace để tiết kiệm dung lượng
+            cleanWs()
+        }
+    }
+}

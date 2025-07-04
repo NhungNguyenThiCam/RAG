@@ -38,10 +38,14 @@ services:
       context: ../RAG_Project/Container_Folder/chatbot_api
       dockerfile: dockerfile
     image: tructran172003/chatbot-api:v1.0
+    env_file:
+      - ./config/.env
     ports:
       - "4096:4096"
     depends_on:
+      - db
       - whisper-api
+      - tts-api
     deploy:
       resources:
         reservations:
@@ -49,8 +53,6 @@ services:
             - driver: nvidia
               capabilities: [gpu]
               count: all
-    env_file:
-      - /home/daniel/Documents/GitHub/RAG_Project/config/.env
     networks:
       - my-network
 

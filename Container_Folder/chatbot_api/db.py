@@ -22,7 +22,7 @@ def get_pgvector_store(collection_name: str) -> PGVector:
     db_user = os.getenv("POSTGRES_USER")
     db_password = quote_plus(os.getenv("POSTGRES_PASSWORD"))
     db_name = os.getenv("POSTGRES_DB")
-    db_host = os.getenv("POSTGRES_HOST")
+    db_host = os.getenv("POSTGRES_CONTAINER_HOST")
     db_port = os.getenv("POSTGRES_PORT")
 
     if not all([db_user, db_password, db_name]):
@@ -31,6 +31,8 @@ def get_pgvector_store(collection_name: str) -> PGVector:
     # Tạo connection string cho PostgreSQL
     connection_string = f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     print(f"Connecting to PGvector with database '{db_name}'...")
+    # print(f"Connecting to PGvector with database '{db_password}'...")
+    # print(f"Connecting to PGvector with database '{db_host}'...")
 
     try:
         embedding_model = HuggingFaceEmbeddings(model_name=os.getenv("MODEL_NAME_EMBED"))

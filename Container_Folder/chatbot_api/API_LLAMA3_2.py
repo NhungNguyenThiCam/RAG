@@ -45,7 +45,7 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
         try:
             # --- Ghi log các bước xử lý ---
             logger.info("Received audio input. Calling STT service.")
-            response_stt = requests.post("http://0.0.0.0:8000/STT/", files={"file": audio.file})
+            response_stt = requests.post("http://whisper-api:8000/STT/", files={"file": audio.file})
             response_stt.raise_for_status() # Kiểm tra lỗi HTTP từ STT service
             
             data = response_stt.json()
@@ -66,7 +66,7 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
 
             # --- Gọi TTS service ---
             logger.info("Calling TTS service to synthesize audio.")
-            answer_audio_base64 = requests.post("http://0.0.0.0:8001/transcribe/", data={"text_input": output_text})
+            answer_audio_base64 = requests.post("http://tts-api:8001/transcribe/", data={"text_input": output_text})
             answer_audio_base64.raise_for_status()
 
             tts_data = answer_audio_base64.json()

@@ -15,6 +15,16 @@ pipeline {
     }
 
     stages {
+        stage('CI Workflow') {
+            when {
+                changeset "**/Container_Folder/**"
+            }
+            steps {
+                echo 'Changes detected in Container_Folder/, running tests...'
+                // Thêm bước Unit test, Lint ở đây
+            }
+        }
+        
         stage('Test') {
             agent {
                 docker {

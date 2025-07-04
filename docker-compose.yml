@@ -33,22 +33,27 @@ services:
               capabilities: [gpu] 
               count: all # This corresponds to --gpus all
 
-  # chatbot_api:
-  #   build:
-  #     context: ../RAG_Project/Container_Folder/Chatbot_API
-  #     dockerfile: dockerfile
-  #   image: tructran172003/chatbot-api:v1.0
-  #   ports:
-  #     - "5000:5000"
-  #   depends_on:
-  #     - whisper-api
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             capabilities: [gpu] 
-  #             count: all # This corresponds to --gpus all
+  chatbot_api:
+    build:
+      context: ../RAG_Project/Container_Folder/chatbot_api
+      dockerfile: dockerfile
+    image: tructran172003/chatbot-api:v1.0
+    ports:
+      - "4096:4096"
+    depends_on:
+      - whisper-api
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+              count: all
+    env_file:
+      - /home/daniel/Documents/GitHub/RAG_Project/config/.env
+    networks:
+      - my-network
+
 
   db:
     image: pgvector/pgvector:pg16

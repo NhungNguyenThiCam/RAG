@@ -16,32 +16,18 @@ WORKDIR /app
 # Copy files
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-COPY Whisper_API.py .
-
-ENV HF_HUB_CACHE=~/.cache/huggingface/hub
-
-# ADD and RUN file download
-RUN mkdir -p ~/.cache/huggingface
-RUN mkdir -p ~/.cache/huggingface/hub
-# RUN mkdir -p ~/.cache/huggingface/hub/models--Systran--faster-whisper-medium
-RUN mkdir -p ./models--Systran--faster-whisper-medium
-COPY models--Systran--faster-whisper-medium ./models--Systran--faster-whisper-medium
-
-RUN cp -r ./models--Systran--faster-whisper-medium ~/.cache/huggingface/hub/
-RUN rm -rf ./models--Systran--faster-whisper-medium
-
-# COPY models--Systran--faster-whisper-medium ~/.cache/huggingface/hub/models--Systran--faster-whisper-medium
-# COPY ./test ~/.cache/huggingface/hub/models--Systran--faster-whisper-medium-copy
-
-# COPY models--Systran--faster-whisper-medium .
-# COPY ./test .
+COPY API_LLAMA3_2.py .
+COPY db.py .
+COPY model.py .
+COPY utils.py .
+COPY prompt.py .
 
 
 # Expose FastAPI default port
-EXPOSE 8000
+EXPOSE 4096
 
 # Run the app using uvicorn
-CMD ["uvicorn", "Whisper_API:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "API_LLAMA3_2:app", "--host", "0.0.0.0", "--port", "4096"]
 
 
 

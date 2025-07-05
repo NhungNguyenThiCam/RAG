@@ -1,9 +1,6 @@
 import sys
 import os
 
-# Thêm thư mục gốc của dự án vào Python Path.
-# Điều này cho phép pytest tìm thấy module 'Container_Folder' khi chạy test.
-
 # Lấy đường dẫn đến thư mục chứa file conftest.py này (tức là 'test_CICD')
 current_dir = os.path.dirname(__file__)
 

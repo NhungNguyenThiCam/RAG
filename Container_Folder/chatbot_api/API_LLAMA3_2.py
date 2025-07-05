@@ -75,15 +75,20 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
             return {"type": "audio", "audio_base64": final_audio_base64}
 
         except requests.exceptions.RequestException as e:
-            # Ghi lại lỗi khi gọi đến các service khác
             logger.error(f"HTTP request to another service failed: {e}")
-            # Trả về một lỗi có ý nghĩa cho client
-            return {"error": "Failed to communicate with an internal service."}, 500
+            # Sửa lại dòng return để sử dụng JSONResponse
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to communicate with an internal service."}
+            )
         except Exception as e:
             # Bắt các lỗi không lường trước khác
             logger.error(f"An unexpected error occurred: {e}", exc_info=True)
-            return {"error": "An internal server error occurred."}, 500
-    
+            return JSONResponse(
+                status_code=500,
+                content={"error": "An internal server error occurred."}
+            )
+
 
 # uvicorn API_LLAMA3_2:app --host 0.0.0.0 --port 4096 --reload
 

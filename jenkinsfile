@@ -1,120 +1,126 @@
+// Jenkinsfile (Declarative Pipeline)
+
 pipeline {
     agent any
-    options {
-        // Giữ lại tối đa 5 bản build log trong 5 ngày
-        buildDiscarder(logRotator(numToKeepStr: '5', daysToKeepStr: '5'))
-        // Bật timestamp cho mỗi dòng log
-        timestamps()
-    }
 
     environment {
-        tts_api_registry     = 'tructran172003/tts-api'
-        whisper_api_registry = 'tructran172003/whisper-api'
-        chatbot_api_registry = 'tructran172003/chatbot-api'
-        registryCredential   = 'dockerhub'
+        DOCKER_REGISTRY_USER = 'tructran172003' 
+        
+        // Tên các ảnh Docker
+        TTS_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-tts-service"
+        STT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-stt-service"
+        CHATBOT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-chatbot-service"
+        
+        // ID của registry credential đã được lưu trong Jenkins
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+
+        // SỬ DỤNG BUILD_NUMBER LÀM TAG PHIÊN BẢN
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('CI Workflow') {
+        // Giai đoạn 1: Lấy mã nguồn từ Git
+        stage('Checkout SCM') {
+            steps {
+                echo 'Đang lấy mã nguồn từ Git...'
+                git url: 'https://github.com/TrucTranTrung/RAG_Project', branch: 'main'
+            }
+        }
+
+        // Giai đoạn 2: Xây dựng các ảnh Docker
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    echo "Bắt đầu xây dựng các ảnh Docker với tag: ${IMAGE_TAG}"
+                    
+                    // Xây dựng ảnh cho Text-to-Speech service với tag phiên bản
+                    docker.build("${TTS_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/Text_to_Speech/Dockerfile .")
+                    
+                    // Xây dựng ảnh cho Speech-to-Text service với tag phiên bản
+                    docker.build("${STT_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/Speech_to_Text/Dockerfile .")
+
+                    // Xây dựng ảnh cho Chatbot RAG service với tag phiên bản
+                    docker.build("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/chatbot_api/Dockerfile .")
+                    
+                    echo "Xây dựng ảnh Docker hoàn tất."
+                }
+            }
+        }
+
+        // Giai đoạn 3: Chạy các bài test
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo "Bắt đầu chạy các bài kiểm thử (pytest)..."
+                    
+                    // Cài đặt các thư viện cần thiết cho test
+                    sh 'pip install -r requirements.txt'
+                    
+                    // Chạy các file test
+                    sh 'pytest test_CICD/test_tts_api.py --verbose'
+                    sh 'pytest test_CICD/test_whisper-api.py --verbose'
+                    sh 'pytest test_CICD/test_chatbot_api.py --verbose'
+                    
+                    echo "Tất cả các bài kiểm thử đã pass."
+                }
+            }
+        }
+
+        // Giai đoạn 4: Đẩy ảnh Docker lên Registry
+        // Giai đoạn này chỉ chạy khi build trên nhánh 'main'
+        stage('Push Docker Images') {
             when {
-                changeset "**/Container_Folder/**"
+                branch 'main'
             }
             steps {
-                echo 'Changes detected in Container_Folder/, running tests...'
-                // Thêm bước Unit test, Lint ở đây
+                script {
+                    echo "Đang đẩy các ảnh Docker lên Docker Hub..."
+                    
+                    // Đăng nhập vào Docker Hub sử dụng credential đã lưu trong Jenkins
+                    docker.withRegistry("https://registry.hub.docker.com", DOCKER_CREDENTIALS_ID) {
+                        
+                        // Đẩy từng ảnh với tag phiên bản cụ thể
+                        docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push()
+                        docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push()
+                        docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push()
+
+                        // (Tùy chọn) Đẩy thêm tag 'latest' để trỏ đến phiên bản mới nhất
+                        docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                        docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                        docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                    }
+                    
+                    echo "Đẩy ảnh Docker hoàn tất."
+                }
             }
         }
         
-        stage('Test') {
-            agent {
-                docker {
-                    image 'python:3.10'
-                }
-            }
-            steps {
-                echo 'Testing model correctness..'
-                // Giả định requirements.txt ở thư mục gốc và test cho cả 3 service
-                // Bạn có thể cần điều chỉnh đường dẫn tới requirements.txt nếu cần
-                sh 'pip install -r ./Container_Folder/Faster_Whisper/requirements.txt && pytest ./Container_Folder/Faster_Whisper/tests'
-                sh 'pip install -r ./Container_Folder/Text_to_Speech/requirements.txt && pytest ./Container_Folder/Text_to_Speech/tests'
-                sh 'pip install -r ./Container_Folder/chatbot_api/requirements.txt && pytest ./Container_Folder/chatbot_api/tests'
-            }
-        }
-
-        // Build và Push tất cả các image song song để tiết kiệm thời gian
-        stage('Build & Push All Services') {
-            parallel {
-                stage('Build & Push TTS') {
-                    steps {
-                        // Chuyển vào thư mục context của service
-                        dir('./Container_Folder/Text_to_Speech') {
-                            script {
-                                echo "Building TTS image.."
-                                // Build image với tên và tag là 'latest'
-                                def dockerImage = docker.build(env.tts_api_registry, "-f Dockerfile .")
-                                
-                                echo "Pushing TTS image to Docker Hub.."
-                                // Đăng nhập và push image với 2 tag: số build và 'latest'
-                                docker.withRegistry('', env.registryCredential) {
-                                    dockerImage.push("${env.BUILD_NUMBER}")
-                                    dockerImage.push("latest")
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Build & Push Whisper') {
-                    steps {
-                        dir('./Container_Folder/Faster_Whisper') {
-                            script {
-                                echo "Building Whisper image.."
-                                def dockerImage = docker.build(env.whisper_api_registry, "-f Dockerfile .")
-
-                                echo "Pushing Whisper image to Docker Hub.."
-                                docker.withRegistry('', env.registryCredential) {
-                                    dockerImage.push("${env.BUILD_NUMBER}")
-                                    dockerImage.push("latest")
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Build & Push Chatbot') {
-                    steps {
-                        dir('./Container_Folder/chatbot_api') {
-                            script {
-                                echo "Building Chatbot image.."
-                                def dockerImage = docker.build(env.chatbot_api_registry, "-f Dockerfile .")
-
-                                echo "Pushing Chatbot image to Docker Hub.."
-                                docker.withRegistry('', env.registryCredential) {
-                                    dockerImage.push("${env.BUILD_NUMBER}")
-                                    dockerImage.push("latest")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+        // Giai đoạn 5: Triển khai ứng dụng
         stage('Deploy') {
+            when {
+                branch 'main'
+            }
             steps {
-                echo 'Deploying models with Docker Compose...'
-                // Sử dụng docker-compose để pull image mới và khởi chạy lại dịch vụ
-                // Lệnh này sẽ chỉ khởi động lại các service có image đã thay đổi
-                // sh 'docker-compose pull'
-                // sh 'docker-compose up -d --remove-orphans'
+                echo "Bắt đầu triển khai ứng dụng phiên bản: ${IMAGE_TAG}"
+                
+                // placeholder.
+
+                echo "Triển khai hoàn tất (placeholder)."
             }
         }
     }
     
+    // Các hành động sẽ được thực hiện sau khi pipeline kết thúc
     post {
-        // Luôn luôn chạy sau khi pipeline kết thúc, dù thành công hay thất bại
         always {
-            echo 'Pipeline finished. Cleaning up workspace...'
-            // Dọn dẹp workspace để tiết kiệm dung lượng
+            echo 'Pipeline đã kết thúc.'
             cleanWs()
+        }
+        success {
+            echo 'Pipeline thành công!'
+        }
+        failure {
+            echo 'Pipeline thất bại!'
         }
     }
 }

@@ -35,6 +35,7 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
         for document, score in output_database:
             documents.append(document.page_content)
             similarities.append(score)
+            
         reranked_indices = get_top_k_contexts(documents, question, similarities, k=3)
         # print(f"Saved reranked indices to {reranked_indices}")
 

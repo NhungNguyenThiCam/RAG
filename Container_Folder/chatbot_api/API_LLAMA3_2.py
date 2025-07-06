@@ -38,7 +38,6 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
             
         reranked_indices = get_top_k_contexts(documents, question, similarities, k=3)
         # print(f"Saved reranked indices to {reranked_indices}")
-
         output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=question)
 
         return {"type": "text", "content": output_text}

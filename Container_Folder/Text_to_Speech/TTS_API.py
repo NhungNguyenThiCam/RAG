@@ -8,7 +8,6 @@ from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 app = FastAPI()
 
 @app.post("/transcribe")

@@ -48,6 +48,7 @@ pipeline {
                         sh 'echo "${ENV_FILE_CONTENT}" > config/.env'
 
                         echo "Bắt đầu xây dựng các ảnh Docker và khởi động dịch vụ..."
+                        sh 'docker compose -f docker-compose.jenkins.yml build'
                         sh 'docker compose -f docker-compose.jenkins.yml up -d'
                         
                         echo "Cài đặt các thư viện cần thiết và chạy embedding..."

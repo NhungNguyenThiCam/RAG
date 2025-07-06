@@ -3,18 +3,20 @@
 pipeline {
     agent any
     environment {
-        DOCKER_REGISTRY_USER = 'tructran172003' 
+        // DOCKER_REGISTRY_USER = 'tructran172003' 
         
         // Tên các ảnh Docker
-        TTS_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-tts-service"
-        STT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-stt-service"
-        CHATBOT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-chatbot-service"
-        
+        // TTS_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-tts-service"
+        // STT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-stt-service"
+        // CHATBOT_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/rag-chatbot-service"
+        // DB_IMAGE_NAME = "${env.DOCKER_REGISTRY_USER}/db"
+
         // ID của registry credential đã được lưu trong Jenkins
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+        ENV_CREDENTIALS_ID = 'rag-project-env-file'
 
         // SỬ DỤNG BUILD_NUMBER LÀM TAG PHIÊN BẢN
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        // IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -34,11 +36,22 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Bắt đầu xây dựng các ảnh Docker với tag: ${IMAGE_TAG}"
-                    
-                    sh 'docker compose up'
+                    // Sử dụng withCredentials để tải secret vào một biến môi trường tạm thời
+                    withCredentials([string(credentialsId: ENV_CREDENTIALS_ID, variable: 'ENV_FILE_CONTENT')]) {
+                        echo "Tạo file .env từ Jenkins Credentials..."
+                        // Ghi toàn bộ nội dung đã lưu vào file config/.env
+                        // Dấu ngoặc kép quanh ${ENV_FILE_CONTENT} rất quan trọng để giữ nguyên định dạng nhiều dòng
+                        sh 'echo "${ENV_FILE_CONTENT}" > config/.env'
 
-                    echo "Xây dựng ảnh Docker hoàn tất."
+                        echo "Bắt đầu xây dựng các ảnh Docker và khởi động dịch vụ..."
+                        sh 'docker compose -f docker-compose.jenkins.yml up -d'
+                        
+                        echo "Cài đặt các thư viện cần thiết và chạy embedding..."
+                        sh 'pip install -r requirements.txt'
+                        sh 'python embedding.py'
+
+                        echo "Hoàn tất giai đoạn Build và Run."
+                    }
                 }
             }
         }
@@ -50,9 +63,6 @@ pipeline {
                     echo "Chuẩn bị môi trường test sử dụng Docker..."
                     docker.image('python:3.10-slim').inside {
                         echo "Bắt đầu chạy các bài kiểm thử (pytest) bên trong container..."
-                        
-                        // Cài đặt các thư viện cần thiết cho test
-                        sh 'pip install -r requirements.txt'
                         
                         // Chạy các file test
                         sh './run_test.sh'
@@ -83,9 +93,11 @@ pipeline {
                         // docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push()
 
                         // Đẩy thêm tag 'latest' để trỏ đến phiên bản mới nhất
-                        docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
-                        docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
-                        docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                        // docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                        // docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                        // docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+
+                        sh 'docker compose -f docker-compose.jenkins.yml push'
                     }
                     
                     echo "Đẩy ảnh Docker hoàn tất."

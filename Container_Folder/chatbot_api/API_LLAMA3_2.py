@@ -22,6 +22,7 @@ vector_store = get_pgvector_store(collection_name=collection_name)
 async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = File(None)):
     if isinstance(audio, str) and audio == "":
         audio = None
+        
     if not question and not audio:
         return JSONResponse(status_code=400, content={"error": "No question or audio provided"})
 

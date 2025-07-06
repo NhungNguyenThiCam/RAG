@@ -40,13 +40,13 @@ pipeline {
                     echo "Bắt đầu xây dựng các ảnh Docker với tag: ${IMAGE_TAG}"
                     
                     // Xây dựng ảnh cho Text-to-Speech service với tag phiên bản
-                    docker.build("${TTS_IMAGE_NAME}:${IMAGE_TAG}", "-f ../Container_Folder/Text_to_Speech/dockerfile .")
+                    docker.build("${TTS_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/Text_to_Speech/dockerfile .")
                     
                     // Xây dựng ảnh cho Speech-to-Text service với tag phiên bản
-                    docker.build("${STT_IMAGE_NAME}:${IMAGE_TAG}", "-f ../Container_Folder/Faster_Whisper/dockerfile .")
+                    docker.build("${STT_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/Faster_Whisper/dockerfile .")
 
                     // Xây dựng ảnh cho Chatbot RAG service với tag phiên bản
-                    docker.build("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}", "-f ../Container_Folder/chatbot_api/dockerfile .")
+                    docker.build("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/chatbot_api/dockerfile .")
                     
                     echo "Xây dựng ảnh Docker hoàn tất."
                 }

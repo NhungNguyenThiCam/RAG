@@ -89,7 +89,6 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
                 content={"error": "An internal server error occurred."}
             )
 
-
 # uvicorn API_LLAMA3_2:app --host 0.0.0.0 --port 4096 --reload
 
 

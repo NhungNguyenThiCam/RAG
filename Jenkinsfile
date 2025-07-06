@@ -63,7 +63,7 @@ pipeline {
                     echo "Chuẩn bị môi trường test sử dụng Docker..."
                     docker.image('python:3.10-slim').inside {
                         echo "Bắt đầu chạy các bài kiểm thử (pytest) bên trong container..."
-                        
+                        sh 'chmod +x ./run_test.sh'
                         // Chạy các file test
                         sh './run_test.sh'
                         

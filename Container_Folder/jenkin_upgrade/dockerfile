@@ -8,7 +8,8 @@ USER root
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
-    gnupg
+    gnupg \
+    git
 
 # Tạo thư mục cho GPG key của Docker
 RUN install -m 0755 -d /etc/apt/keyrings

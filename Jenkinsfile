@@ -39,6 +39,10 @@ pipeline {
                     // Sử dụng withCredentials để tải secret vào một biến môi trường tạm thời
                     withCredentials([string(credentialsId: ENV_CREDENTIALS_ID, variable: 'ENV_FILE_CONTENT')]) {
                         echo "Tạo file .env từ Jenkins Credentials..."
+                        
+                        // SỬA LỖI: Tạo thư mục 'config' nếu nó chưa tồn tại
+                        sh 'mkdir -p config'
+                        
                         // Ghi toàn bộ nội dung đã lưu vào file config/.env
                         // Dấu ngoặc kép quanh ${ENV_FILE_CONTENT} rất quan trọng để giữ nguyên định dạng nhiều dòng
                         sh 'echo "${ENV_FILE_CONTENT}" > config/.env'

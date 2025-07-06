@@ -2,6 +2,9 @@
 
 pipeline {
     agent any
+
+    // KHỐI "WHEN" Ở CẤP CAO NHẤT ĐÃ BỊ XÓA VÌ SAI CÚ PHÁP
+
     environment {
         DOCKER_REGISTRY_USER = 'tructran172003' 
         
@@ -28,6 +31,7 @@ pipeline {
 
         // Giai đoạn 2: Xây dựng các ảnh Docker
         stage('Build Docker Images') {
+            // VÍ DỤ: Thêm 'when' vào đây nếu bạn muốn stage này chỉ chạy khi có thay đổi
             when {
                 changeset "Container_Folder/**"
             }
@@ -43,25 +47,28 @@ pipeline {
 
                     // Xây dựng ảnh cho Chatbot RAG service với tag phiên bản
                     docker.build("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}", "-f Container_Folder/chatbot_api/dockerfile .")
-
+                    
                     echo "Xây dựng ảnh Docker hoàn tất."
                 }
             }
         }
 
-        // Giai đoạn 3: Chạy các bài test
+        // Giai đoạn 3: Chạy các bài test bên trong một Docker container
         stage('Run Tests') {
             steps {
                 script {
-                    echo "Bắt đầu chạy các bài kiểm thử (pytest)..."
-                    
-                    // Cài đặt các thư viện cần thiết cho test
-                    sh 'pip install -r requirements.txt'
-                    
-                    // Chạy các file test
-                    sh './run_test.sh'
-                    
-                    echo "Tất cả các bài kiểm thử đã pass."
+                    echo "Chuẩn bị môi trường test sử dụng Docker..."
+                    docker.image('python:3.10-slim').inside {
+                        echo "Bắt đầu chạy các bài kiểm thử (pytest) bên trong container..."
+                        
+                        // Cài đặt các thư viện cần thiết cho test
+                        sh 'pip install -r requirements.txt'
+                        
+                        // Chạy các file test
+                        sh './run_test.sh'
+                        
+                        echo "Tất cả các bài kiểm thử đã pass."
+                    }
                 }
             }
         }
@@ -81,9 +88,9 @@ pipeline {
                     docker.withRegistry("https://registry.hub.docker.com", DOCKER_CREDENTIALS_ID) {
                         
                         // Đẩy từng ảnh với tag phiên bản cụ thể
-                        docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push()
-                        docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push()
-                        docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push()
+                        // docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push()
+                        // docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push()
+                        // docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push()
 
                         // Đẩy thêm tag 'latest' để trỏ đến phiên bản mới nhất
                         docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push("latest")

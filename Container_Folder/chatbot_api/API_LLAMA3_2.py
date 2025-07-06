@@ -61,6 +61,7 @@ async def rag_api(question: str = Form(None), audio: Union[UploadFile, str] = Fi
             for document, score in output_database:
                 documents.append(document.page_content)
                 similarities.append(score)
+                
             reranked_indices = get_top_k_contexts(documents, output_stt, similarities, k=3)
             output_text = get_entities_as_string_GEMINI(prompt_template, information=reranked_indices, question=output_stt)
 

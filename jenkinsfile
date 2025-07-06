@@ -3,6 +3,10 @@
 pipeline {
     agent any
 
+    when {
+        changeset "Container_Folder/**"
+    }
+
     environment {
         DOCKER_REGISTRY_USER = 'tructran172003' 
         
@@ -57,9 +61,7 @@ pipeline {
                     sh 'pip install -r requirements.txt'
                     
                     // Chạy các file test
-                    sh 'pytest test_CICD/test_tts_api.py --verbose'
-                    sh 'pytest test_CICD/test_whisper-api.py --verbose'
-                    sh 'pytest test_CICD/test_chatbot_api.py --verbose'
+                    sh './run_test.sh'
                     
                     echo "Tất cả các bài kiểm thử đã pass."
                 }
@@ -67,7 +69,6 @@ pipeline {
         }
 
         // Giai đoạn 4: Đẩy ảnh Docker lên Registry
-        // Giai đoạn này chỉ chạy khi build trên nhánh 'main'
         stage('Push Docker Images') {
             when {
                 branch 'main'
@@ -84,7 +85,7 @@ pipeline {
                         docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push()
                         docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push()
 
-                        // (Tùy chọn) Đẩy thêm tag 'latest' để trỏ đến phiên bản mới nhất
+                        // Đẩy thêm tag 'latest' để trỏ đến phiên bản mới nhất
                         docker.image("${TTS_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
                         docker.image("${STT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")
                         docker.image("${CHATBOT_IMAGE_NAME}:${IMAGE_TAG}").push("latest")

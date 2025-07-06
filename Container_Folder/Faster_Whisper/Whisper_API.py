@@ -5,7 +5,6 @@ import tempfile
 import shutil
 import os
 
-
 app = FastAPI()
 
 # Load model only once at startup

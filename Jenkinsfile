@@ -52,7 +52,7 @@ pipeline {
                         sh 'docker compose -f docker-compose.jenkins.yml up -d'
                         
                         echo "Cài đặt các thư viện cần thiết và chạy embedding..."
-                        docker.image('python:3.10-slim').inside {
+                        docker.image('nvidia/cuda:12.3.2-cudnn9-runtime-ubuntu22.04').inside {
                             sh 'apt-get update && apt-get install -y git'
                             sh 'pip install -r requirements.txt'
                             sh 'python3 embedding.py'

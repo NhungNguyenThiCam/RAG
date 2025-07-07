@@ -52,8 +52,10 @@ pipeline {
                         sh 'docker compose -f docker-compose.jenkins.yml up -d'
                         
                         echo "Cài đặt các thư viện cần thiết và chạy embedding..."
-                        sh 'pip install -r requirements.txt'
-                        sh 'python embedding.py'
+                        docker.image('python:3.10-slim').inside {
+                            sh 'pip install -r requirements.txt'
+                            sh 'python3 embedding.py'
+                        }
 
                         echo "Hoàn tất giai đoạn Build và Run."
                     }

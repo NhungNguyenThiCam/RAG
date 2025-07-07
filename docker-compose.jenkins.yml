@@ -59,7 +59,7 @@ services:
 
   db:
     image: pgvector/pgvector:pg16
-    container_name: pgvector-rag
+    container_name: pgvector-rag-CICD
     restart: always
     env_file:
       - ./config/.env

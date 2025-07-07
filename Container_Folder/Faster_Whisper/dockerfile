@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Sao chép script download vào image
 COPY download_model.py .
 # Chạy script để tải model. Lớp (layer) này sẽ được cache lại.
-RUN python download_model.py
+RUN python downloadmodel.py
 
 # --- KẾT THÚC PHẦN TẢI MODEL ---
 

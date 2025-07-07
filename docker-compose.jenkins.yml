@@ -1,7 +1,7 @@
 services:
   whisper-api:
     build:
-      context: ../RAG_Project/Container_Folder/Faster_Whisper
+      context: ..Container_Folder/Faster_Whisper
       dockerfile: dockerfile
     image: tructran172003/whisper-api:latest
     ports:
@@ -18,7 +18,7 @@ services:
 
   tts-api:
     build:
-      context: ../RAG_Project/Container_Folder/Text_to_Speech
+      context: ..Container_Folder/Text_to_Speech
       dockerfile: dockerfile
     image: tructran172003/tts-api:latest
     ports:
@@ -35,7 +35,7 @@ services:
 
   chatbot_api:
     build:
-      context: ../RAG_Project/Container_Folder/chatbot_api
+      context: ..Container_Folder/chatbot_api
       dockerfile: dockerfile
     image: tructran172003/chatbot-api:latest
     env_file:
